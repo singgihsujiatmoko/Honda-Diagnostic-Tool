@@ -1,0 +1,485 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Penjelasan Array Byte Mapping ECU (Renesas C++)</title>
+    <style>
+        /* CSS Styling */
+        :root {
+            --bg-color: #1e1e1e;
+            --card-bg: #2d2d2d;
+            --text-color: #d4d4d4;
+            --primary-color: #4fc3f7;
+            --highlight-bg: #4a4a4a;
+            --highlight-strong-bg: #0d47a1;
+            --border-color: #444;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            line-height: 1.6;
+            margin: 0;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 960px; /* Dipersempit agar lebih mudah dibaca dalam satu kolom */
+            margin: auto;
+            display: flex;
+            flex-direction: column; /* Mengubah layout menjadi satu kolom vertikal */
+            gap: 25px; /* Jarak antar card */
+        }
+
+        h1, h2, h3, h4 {
+            color: var(--primary-color);
+            border-bottom: 2px solid var(--border-color);
+            padding-bottom: 5px;
+        }
+        
+        h1 {
+            text-align: center;
+            border-bottom-color: var(--primary-color);
+        }
+
+        .card {
+            background-color: var(--card-bg);
+            border-radius: 8px;
+            padding: 20px;
+            border: 1px solid var(--border-color);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
+        
+        .workflow-diagram {
+            background-color: #111;
+            padding: 15px;
+            border-radius: 5px;
+            font-family: 'Consolas', 'Monaco', monospace;
+            text-align: center;
+            margin-top: 15px;
+        }
+
+        pre {
+            background-color: #111;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+            border: 1px solid var(--border-color);
+        }
+
+        code {
+            font-family: 'Consolas', 'Monaco', monospace;
+            color: #9cdcfe;
+        }
+
+        .code-comment { color: #6a9955; }
+        .code-keyword { color: #c586c0; }
+        .code-type { color: #4ec9b0; }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+            font-size: 0.9em;
+        }
+
+        th, td {
+            border: 1px solid var(--border-color);
+            padding: 8px;
+            text-align: center;
+        }
+
+        th {
+            background-color: #3c3c3c;
+            color: var(--primary-color);
+        }
+        
+        .controls {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .control-group {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .control-group label {
+            min-width: 80px;
+        }
+        
+        .control-group input[type="range"] {
+            flex-grow: 1;
+        }
+        
+        #calculation-steps {
+            background-color: #111;
+            padding: 15px;
+            border-radius: 5px;
+            margin-top: 20px;
+            min-height: 100px;
+            white-space: pre-wrap;
+            font-family: 'Consolas', 'Monaco', monospace;
+            line-height: 1.5;
+        }
+        
+        .highlight-cell { background-color: var(--highlight-strong-bg) !important; color: white; font-weight: bold;}
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>Visualisasi Cara Kerja Mapping ECU (Renesas C++)</h1>
+        
+        <div class="card">
+            <h2>Konsep Dasar</h2>
+            <p>Dalam dunia tuning mesin (ECU/ECM), "map" adalah sebuah tabel data yang digunakan untuk menentukan output berdasarkan satu atau lebih input. Misalnya, map bahan bakar menentukan berapa banyak bahan bakar yang harus disemprotkan berdasarkan RPM mesin dan posisi throttle (TPS).</p>
+            <p>Data ini disimpan di memori mikrokontroler (seperti Renesas) sebagai array. Untuk map 2D (seperti RPM vs TPS), kita membutuhkan tiga buah array:</p>
+            <ol>
+                <li><strong>Breakpoint Array Sumbu X (misal: RPM)</strong>: Array 1D yang berisi titik-titik acuan untuk sumbu RPM.</li>
+                <li><strong>Breakpoint Array Sumbu Y (misal: TPS)</strong>: Array 1D yang berisi titik-titik acuan untuk sumbu TPS.</li>
+                <li><strong>Data Map 2D</strong>: Array 2D (atau 1D yang diakses seolah-olah 2D) yang berisi nilai output untuk setiap kombinasi breakpoint.</li>
+            </ol>
+            <p>Jika input (RPM/TPS) berada di antara dua titik breakpoint, ECU akan melakukan <strong>interpolasi bilinear</strong> untuk menghitung nilai output yang presisi.</p>
+        </div>
+
+        <div class="card">
+            <h2>Source Code C++ (Renesas Style)</h2>
+            <p>Berikut adalah contoh kode C++ yang mendefinisikan array-array tersebut. Kode ini menunjukkan bagaimana data-data tersebut dideklarasikan dalam memori mikrokontroler.</p>
+            <pre><code id="cpp-code-block"></code></pre>
+        </div>
+
+        <!-- PENJELASAN BARU DITAMBAHKAN DI SINI -->
+        <div class="card">
+            <h2>Bagaimana Proses Remapping Bekerja?</h2>
+            <p>Seorang *remaper* atau *tuner* tidak memiliki source code C++ di atas. Mereka hanya memiliki file biner (<strong>.bin</strong> atau <strong>.hex</strong>) yang merupakan hasil kompilasi dari kode tersebut. File biner ini berisi semua instruksi program dan data (map) dalam bentuk byte mentah. Lalu, bagaimana mereka bisa mengubah nilai map tanpa merusak program utama? Jawabannya ada pada pemisahan antara <strong>Kode</strong> dan <strong>Data</strong> di dalam memori, dan penggunaan <strong>File Definisi</strong>.</p>
+
+            <p>Bayangkan program ECU sebagai sebuah buku resep. Bagian program (fungsi `getMapValue`) adalah <strong>langkah-langkah memasak</strong>, sedangkan map bahan bakar dan pengapian adalah <strong>daftar bahan dan takarannya</strong>. Seorang koki (tuner) bisa mengubah takaran bahan (misalnya, menambah gula) tanpa mengubah langkah-langkah memasaknya.</p>
+
+            <h3>1. Peran File .bin (Hasil Kompilasi)</h3>
+            <p>Saat kode C++ di-compile, compiler akan menempatkan:
+                <ul>
+                    <li><strong>Instruksi Program</strong> (logika `if-else`, loop, fungsi kalkulasi seperti `getMapValue`) di satu area memori yang disebut segmen <em>.text</em> atau <em>CODE</em>.</li>
+                    <li><strong>Data Konstan</strong> (array `breakpointRPM`, `fuelMap`, `ignitionMap`) di area memori lain yang disebut segmen <em>.rodata</em> (Read-Only Data) atau <em>CONST</em>.</li>
+                </ul>
+                Setiap byte di dalam file .bin memiliki <strong>alamat memori</strong> yang spesifik. Program tahu di alamat mana ia harus mencari data map yang ia butuhkan.
+            </p>
+
+            <h3>2. Peran File Definisi (Contoh: XDF untuk TunerPro)</h3>
+            <p>
+                File biner hanyalah sekumpulan angka heksadesimal yang tidak berarti tanpa konteks. Di sinilah peran file definisi seperti <strong>.XDF (eXternal DeFinition)</strong> menjadi sangat penting. File XDF adalah "peta" atau "kamus" yang memberi tahu software tuning (seperti TunerPro) cara membaca file .bin tersebut.
+            </p>
+            <p>Isi dari sebuah file XDF antara lain:</p>
+            <ul>
+                <li><strong>Alamat Awal Map:</strong> "Map Bahan Bakar (fuelMap) dimulai dari alamat memori <code>0x0800C000</code>."</li>
+                <li><strong>Dimensi Map:</strong> "Map tersebut berukuran 8 baris (RPM) dan 6 kolom (TPS)."</li>
+                <li><strong>Tipe Data:</strong> "Setiap nilai dalam map ini adalah <code>uint8_t</code> (1 byte tanpa tanda)."</li>
+                <li><strong>Referensi Sumbu:</strong> "Sumbu X (kolom) menggunakan data dari 'breakpointTPS' yang ada di alamat <code>0x0800B000</code>. Sumbu Y (baris) menggunakan 'breakpointRPM' dari alamat <code>0x0800B010</code>."</li>
+                <li><strong>Faktor Konversi (Scaling):</strong> "Nilai mentah <code>160</code> di dalam map harus ditampilkan sebagai <code>32.0</code> derajat pengapian (misal, dengan rumus `Nilai = X / 5.0`)."</li>
+            </ul>
+
+            <h3>3. Alur Kerja Remapping</h3>
+            <p>Prosesnya menjadi sederhana dengan adanya kombinasi ini:</p>
+            <div class="workflow-diagram">
+                File .bin (Data Mentah)<br>
+                +<br>
+                File .XDF (Kamus/Peta)<br>
+                =<br>
+                Tampilan Tabel/Grafik 3D yang bisa diedit di TunerPro
+            </div>
+            <ol>
+                <li>Tuner membuka file <strong>.bin</strong> di TunerPro.</li>
+                <li>Tuner memuat file <strong>.XDF</strong> yang sesuai.</li>
+                <li>TunerPro menggunakan informasi dari XDF untuk membaca byte dari alamat yang benar di file .bin, lalu menampilkannya sebagai tabel yang mudah dipahami.</li>
+                <li>Tuner mengubah nilai di tabel (misal, dari 29 menjadi 31).</li>
+                <li>TunerPro secara otomatis mencari alamat memori yang sesuai untuk sel tersebut dan <strong>mengubah nilai byte di alamat itu saja</strong> di dalam salinan file .bin.</li>
+                <li>Tuner menyimpan file .bin yang sudah dimodifikasi. File ini memiliki 99.9% konten yang sama dengan aslinya; hanya beberapa byte data map yang berubah.</li>
+                <li>File .bin baru ini kemudian di-"flash" kembali ke mikrokontroler ECU.</li>
+            </ol>
+
+            <h4>Mengapa Ini Aman dan Tidak Merusak Program Utama?</h4>
+            <p>Karena proses ini hanya mengubah <strong>data</strong> di alamat memori yang sudah ditentukan. <strong>Instruksi program</strong> yang berada di alamat memori berbeda sama sekali tidak tersentuh. Program ECU akan tetap berjalan seperti semula, namun saat ia mengambil data dari map, ia akan menemukan nilai baru yang sudah diubah oleh tuner. Inilah inti dari remapping: <strong>mengubah "apa" yang dikerjakan mesin, bukan "bagaimana" cara mesin mengerjakannya.</strong></p>
+        </div>
+
+
+        <div class="card">
+            <h2>Visualisasi & Interaktivitas</h2>
+            <p>Gunakan slider di bawah ini untuk mengubah nilai RPM dan TPS. Perhatikan bagaimana tabel di bawahnya menyorot sel-sel yang digunakan untuk kalkulasi dan bagaimana langkah-langkah perhitungannya muncul secara detail.</p>
+            
+            <div class="controls">
+                <div class="control-group">
+                    <label for="rpm-slider">RPM: <span id="rpm-value">5000</span></label>
+                    <input type="range" id="rpm-slider" min="500" max="8000" value="5000" step="50">
+                </div>
+                <div class="control-group">
+                    <label for="tps-slider">TPS (%): <span id="tps-value">65</span></label>
+                    <input type="range" id="tps-slider" min="0" max="100" value="65" step="1">
+                </div>
+            </div>
+
+            <h3>Hasil & Langkah Kalkulasi</h3>
+            <div id="results">
+                <p><strong>Nilai Fuel (VE):</strong> <span id="fuel-result">-</span></p>
+                <p><strong>Nilai Ignition (Timing):</strong> <span id="ignition-result">-</span></p>
+            </div>
+            <div id="calculation-steps">Pilih nilai RPM dan TPS untuk melihat kalkulasi...</div>
+
+            <h3>Breakpoint & Map Data</h3>
+            <div id="tables-container">
+                <!-- Tabel akan digenerate oleh JS -->
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+    // JavaScript Logic (Sama seperti sebelumnya, tidak perlu diubah)
+    document.addEventListener('DOMContentLoaded', function() {
+
+        // --- DATA DARI C++ (direplikasi di JS untuk simulasi) ---
+        const RPM_AXIS_SIZE = 8;
+        const TPS_AXIS_SIZE = 6;
+
+        const breakpointRPM = [500, 1000, 2000, 3000, 4000, 5000, 6000, 8000];
+        const breakpointTPS = [0, 20, 40, 60, 80, 100];
+
+        const fuelMap = [
+            70,  75,  80,  85,  90,  92,  80,  88,  95, 100, 102, 105, 90, 100, 110, 120, 125, 130, 95, 110, 125, 140, 150, 155, 100, 120, 140, 160, 175, 180, 105, 125, 150, 170, 185, 190, 100, 120, 145, 165, 180, 185, 95, 115, 135, 155, 170, 175,
+        ];
+
+        const ignitionMap = [
+            10,  12,  15,  18,  20,  20, 15,  18,  22,  25,  26,  26, 20,  24,  28,  30,  31,  30, 25,  28,  32,  33,  32,  31, 28,  30,  33,  32,  31,  30, 29,  31,  32,  31,  30,  29, 30,  32,  31,  30,  29,  28, 30,  31,  30,  29,  28,  27,
+        ];
+        
+        // --- DOM Elements ---
+        const rpmSlider = document.getElementById('rpm-slider');
+        const tpsSlider = document.getElementById('tps-slider');
+        const rpmValueSpan = document.getElementById('rpm-value');
+        const tpsValueSpan = document.getElementById('tps-value');
+        const tablesContainer = document.getElementById('tables-container');
+        const calculationStepsDiv = document.getElementById('calculation-steps');
+        const fuelResultSpan = document.getElementById('fuel-result');
+        const ignitionResultSpan = document.getElementById('ignition-result');
+
+        // --- UTILITY FUNCTIONS ---
+        
+        function createTable(title, headers, data, isMap = false, rowHeaders = null) {
+            let tableHtml = `<h4>${title}</h4><table><thead><tr>`;
+            headers.forEach(h => tableHtml += `<th>${h}</th>`);
+            tableHtml += '</tr></thead><tbody>';
+            
+            if (!isMap) {
+                tableHtml += '<tr>';
+                data.forEach((val, index) => tableHtml += `<td id="${title.toLowerCase().replace(/ /g,'-')}-cell-${index}">${val}</td>`);
+                tableHtml += '</tr>';
+            } else {
+                for (let i = 0; i < RPM_AXIS_SIZE; i++) {
+                    tableHtml += `<tr><th>${rowHeaders[i]}</th>`;
+                    for (let j = 0; j < TPS_AXIS_SIZE; j++) {
+                        const cellIndex = i * TPS_AXIS_SIZE + j;
+                        tableHtml += `<td id="${title.toLowerCase().replace(/ /g,'-')}-cell-${i}-${j}">${data[cellIndex]}</td>`;
+                    }
+                    tableHtml += '</tr>';
+                }
+            }
+            
+            tableHtml += '</tbody></table>';
+            return tableHtml;
+        }
+
+        function findBreakpointIndices(value, breakpointArray) {
+            if (value <= breakpointArray[0]) {
+                return { idx1: 0, idx2: 0, factor: 0 };
+            }
+            const lastIdx = breakpointArray.length - 1;
+            if (value >= breakpointArray[lastIdx]) {
+                return { idx1: lastIdx, idx2: lastIdx, factor: 0 };
+            }
+
+            for (let i = 0; i < lastIdx; i++) {
+                if (value >= breakpointArray[i] && value < breakpointArray[i + 1]) {
+                    const min = breakpointArray[i];
+                    const max = breakpointArray[i + 1];
+                    const factor = (max - min === 0) ? 0 : (value - min) / (max - min);
+                    return { idx1: i, idx2: i + 1, factor: factor };
+                }
+            }
+             return { idx1: lastIdx, idx2: lastIdx, factor: 0 };
+        }
+
+        function lerp(v1, v2, factor) {
+            return v1 + (v2 - v1) * factor;
+        }
+
+        function getMapValue(rpm, tps, mapData, mapName) {
+            const rpmIndices = findBreakpointIndices(rpm, breakpointRPM);
+            const tpsIndices = findBreakpointIndices(tps, breakpointTPS);
+
+            const val_rpm1_tps1 = mapData[rpmIndices.idx1 * TPS_AXIS_SIZE + tpsIndices.idx1];
+            const val_rpm1_tps2 = mapData[rpmIndices.idx1 * TPS_AXIS_SIZE + tpsIndices.idx2];
+            const val_rpm2_tps1 = mapData[rpmIndices.idx2 * TPS_AXIS_SIZE + tpsIndices.idx1];
+            const val_rpm2_tps2 = mapData[rpmIndices.idx2 * TPS_AXIS_SIZE + tpsIndices.idx2];
+
+            const interp_tps_for_rpm1 = lerp(val_rpm1_tps1, val_rpm1_tps2, tpsIndices.factor);
+            const interp_tps_for_rpm2 = lerp(val_rpm2_tps1, val_rpm2_tps2, tpsIndices.factor);
+
+            const finalValue = lerp(interp_tps_for_rpm1, interp_tps_for_rpm2, rpmIndices.factor);
+            
+            logCalculation(rpm, tps, rpmIndices, tpsIndices, 
+                           {val_rpm1_tps1, val_rpm1_tps2, val_rpm2_tps1, val_rpm2_tps2},
+                           {interp_tps_for_rpm1, interp_tps_for_rpm2},
+                           finalValue, mapName);
+
+            highlightTable(rpmIndices, tpsIndices, mapName);
+            
+            return finalValue;
+        }
+
+        let logBuffer = "";
+        function logCalculation(rpm, tps, rpmIdx, tpsIdx, cornerValues, interpValues, finalValue, mapName) {
+            if (mapName === 'Fuel Map') { logBuffer = ""; }
+            
+            logBuffer += `--- Kalkulasi untuk ${mapName} ---\n\n`;
+            logBuffer += `Input: RPM = ${rpm}, TPS = ${tps}%\n\n`;
+
+            logBuffer += `1. Mencari Indeks & Faktor RPM:\n`;
+            logBuffer += `   - RPM ${rpm} berada di antara ${breakpointRPM[rpmIdx.idx1]} (idx=${rpmIdx.idx1}) dan ${breakpointRPM[rpmIdx.idx2]} (idx=${rpmIdx.idx2}).\n`;
+            logBuffer += `   - Faktor interpolasi RPM = (${rpm} - ${breakpointRPM[rpmIdx.idx1]}) / (${breakpointRPM[rpmIdx.idx2]} - ${breakpointRPM[rpmIdx.idx1]}) = ${rpmIdx.factor.toFixed(4)}\n\n`;
+
+            logBuffer += `2. Mencari Indeks & Faktor TPS:\n`;
+            logBuffer += `   - TPS ${tps}% berada di antara ${breakpointTPS[tpsIdx.idx1]}% (idx=${tpsIdx.idx1}) dan ${breakpointTPS[tpsIdx.idx2]}% (idx=${tpsIdx.idx2}).\n`;
+            logBuffer += `   - Faktor interpolasi TPS = (${tps} - ${breakpointTPS[tpsIdx.idx1]}) / (${breakpointTPS[tpsIdx.idx2]} - ${breakpointTPS[tpsIdx.idx1]}) = ${tpsIdx.factor.toFixed(4)}\n\n`;
+            
+            logBuffer += `3. Mengambil 4 Nilai Sudut dari Map:\n`;
+            logBuffer += `   - Pojok 1 (RPM=${breakpointRPM[rpmIdx.idx1]}, TPS=${breakpointTPS[tpsIdx.idx1]}): ${cornerValues.val_rpm1_tps1}\n`;
+            logBuffer += `   - Pojok 2 (RPM=${breakpointRPM[rpmIdx.idx1]}, TPS=${breakpointTPS[tpsIdx.idx2]}): ${cornerValues.val_rpm1_tps2}\n`;
+            logBuffer += `   - Pojok 3 (RPM=${breakpointRPM[rpmIdx.idx2]}, TPS=${breakpointTPS[tpsIdx.idx1]}): ${cornerValues.val_rpm2_tps1}\n`;
+            logBuffer += `   - Pojok 4 (RPM=${breakpointRPM[rpmIdx.idx2]}, TPS=${breakpointTPS[tpsIdx.idx2]}): ${cornerValues.val_rpm2_tps2}\n\n`;
+
+            logBuffer += `4. Interpolasi pada Sumbu TPS:\n`;
+            logBuffer += `   - Nilai antara di baris RPM ${breakpointRPM[rpmIdx.idx1]}: ${interpValues.interp_tps_for_rpm1.toFixed(2)}\n`;
+            logBuffer += `   - Nilai antara di baris RPM ${breakpointRPM[rpmIdx.idx2]}: ${interpValues.interp_tps_for_rpm2.toFixed(2)}\n\n`;
+
+            logBuffer += `5. Interpolasi Akhir pada Sumbu RPM:\n`;
+            logBuffer += `   - Hasil Akhir = lerp(${interpValues.interp_tps_for_rpm1.toFixed(2)}, ${interpValues.interp_tps_for_rpm2.toFixed(2)}, ${rpmIdx.factor.toFixed(4)})\n`;
+            logBuffer += `   - Nilai ${mapName.replace(' Map','')} = ${finalValue.toFixed(2)}\n\n`;
+            
+            calculationStepsDiv.textContent = logBuffer;
+        }
+
+        function highlightTable(rpmIndices, tpsIndices, mapName) {
+            const mapPrefix = mapName.toLowerCase().replace(/ /g,'-');
+            document.getElementById(`breakpoint-rpm-cell-${rpmIndices.idx1}`).classList.add('highlight-cell');
+            document.getElementById(`breakpoint-rpm-cell-${rpmIndices.idx2}`).classList.add('highlight-cell');
+            document.getElementById(`breakpoint-tps-cell-${tpsIndices.idx1}`).classList.add('highlight-cell');
+            document.getElementById(`breakpoint-tps-cell-${tpsIndices.idx2}`).classList.add('highlight-cell');
+
+            document.getElementById(`${mapPrefix}-cell-${rpmIndices.idx1}-${tpsIndices.idx1}`).classList.add('highlight-cell');
+            document.getElementById(`${mapPrefix}-cell-${rpmIndices.idx1}-${tpsIndices.idx2}`).classList.add('highlight-cell');
+            document.getElementById(`${mapPrefix}-cell-${rpmIndices.idx2}-${tpsIndices.idx1}`).classList.add('highlight-cell');
+            document.getElementById(`${mapPrefix}-cell-${rpmIndices.idx2}-${tpsIndices.idx2}`).classList.add('highlight-cell');
+        }
+
+        function clearHighlights() {
+            document.querySelectorAll('td.highlight-cell').forEach(el => el.classList.remove('highlight-cell'));
+        }
+        
+        function updateVisualization() {
+            const rpm = parseInt(rpmSlider.value);
+            const tps = parseInt(tpsSlider.value);
+
+            rpmValueSpan.textContent = rpm;
+            tpsValueSpan.textContent = tps;
+            
+            clearHighlights();
+            
+            const fuelValue = getMapValue(rpm, tps, fuelMap, 'Fuel Map');
+            const ignitionValue = getMapValue(rpm, tps, ignitionMap, 'Ignition Map');
+            
+            fuelResultSpan.textContent = fuelValue.toFixed(2);
+            ignitionResultSpan.textContent = ignitionValue.toFixed(2);
+        }
+
+        function init() {
+            const cppCode = `
+<span class="code-comment">// Tipe data standar untuk embedded (Renesas)</span>
+#include &lt;cstdint&gt;
+
+<span class="code-comment">// Ukuran sumbu/axis dari map</span>
+<span class="code-keyword">const</span> <span class="code-type">uint8_t</span> RPM_AXIS_SIZE = 8;
+<span class="code-keyword">const</span> <span class="code-type">uint8_t</span> TPS_AXIS_SIZE = 6;
+
+<span class="code-comment">// === Breakpoint Arrays ===</span>
+<span class="code-comment">// Array untuk titik acuan RPM (Revolutions Per Minute)</span>
+<span class="code-keyword">const</span> <span class="code-type">uint16_t</span> breakpointRPM[RPM_AXIS_SIZE] = {500, 1000, 2000, 3000, 4000, 5000, 6000, 8000};
+
+<span class="code-comment">// Array untuk titik acuan TPS (Throttle Position Sensor) dalam persen</span>
+<span class="code-keyword">const</span> <span class="code-type">uint8_t</span> breakpointTPS[TPS_AXIS_SIZE] = {0, 20, 40, 60, 80, 100};
+
+<span class="code-comment">// === Data Maps 2D ===</span>
+<span class="code-comment">// Disimpan sebagai array 1D untuk efisiensi memori. Akses: map[row * N_COLS + col]</span>
+
+<span class="code-comment">// Peta Bahan Bakar (Fuel Map - Volumetric Efficiency)</span>
+<span class="code-keyword">const</span> <span class="code-type">uint8_t</span> fuelMap[RPM_AXIS_SIZE * TPS_AXIS_SIZE] = {
+ <span class="code-comment">/*TPS-> 0,  20,  40,  60,  80, 100*/</span>
+    70,  75,  80,  85,  90,  92,  <span class="code-comment">// RPM 500</span>
+    80,  88,  95, 100, 102, 105, <span class="code-comment">// RPM 1000</span>
+    90, 100, 110, 120, 125, 130, <span class="code-comment">// RPM 2000</span>
+    95, 110, 125, 140, 150, 155, <span class="code-comment">// RPM 3000</span>
+    100, 120, 140, 160, 175, 180, <span class="code-comment">// RPM 4000</span>
+    105, 125, 150, 170, 185, 190, <span class="code-comment">// RPM 5000</span>
+    100, 120, 145, 165, 180, 185, <span class="code-comment">// RPM 6000</span>
+    95, 115, 135, 155, 170, 175  <span class="code-comment">// RPM 8000</span>
+};
+
+<span class="code-comment">// Peta Pengapian (Ignition Map)</span>
+<span class="code-keyword">const</span> <span class="code-type">uint8_t</span> ignitionMap[RPM_AXIS_SIZE * TPS_AXIS_SIZE] = {
+ <span class="code-comment">/*TPS-> 0,  20,  40,  60,  80, 100*/</span>
+    10,  12,  15,  18,  20,  20,  <span class="code-comment">// RPM 500</span>
+    15,  18,  22,  25,  26,  26,  <span class="code-comment">// RPM 1000</span>
+    20,  24,  28,  30,  31,  30,  <span class="code-comment">// RPM 2000</span>
+    25,  28,  32,  33,  32,  31,  <span class="code-comment">// RPM 3000</span>
+    28,  30,  33,  32,  31,  30,  <span class="code-comment">// RPM 4000</span>
+    29,  31,  32,  31,  30,  29,  <span class="code-comment">// RPM 5000</span>
+    30,  32,  31,  30,  29,  28,  <span class="code-comment">// RPM 6000</span>
+    30,  31,  30,  29,  28,  27   <span class="code-comment">// RPM 8000</span>
+};
+
+<span class="code-comment">/**
+ * @brief Fungsi untuk mendapatkan nilai dari map 2D dengan interpolasi bilinear.
+ */</span>
+<span class="code-type">float</span> getMapValue(<span class="code-type">uint16_t</span> rpm, <span class="code-type">uint8_t</span> tps, <span class="code-keyword">const</span> <span class="code-type">uint8_t</span>* map) {
+    <span class="code-comment">// ... (Implementasi lookup dan interpolasi bilinear ada di sini) ...</span>
+    <span class="code-comment">// Logika ini disimulasikan di JavaScript untuk keperluan visualisasi.</span>
+    <span class="code-keyword">return</span> 0.0f; <span class="code-comment">// Placeholder</span>
+}
+`;
+            document.getElementById('cpp-code-block').innerHTML = cppCode;
+        
+            let tablesHtml = '';
+            tablesHtml += createTable('Breakpoint RPM', ['idx 0', 'idx 1', 'idx 2', 'idx 3', 'idx 4', 'idx 5', 'idx 6', 'idx 7'], breakpointRPM);
+            tablesHtml += createTable('Breakpoint TPS', ['idx 0', 'idx 1', 'idx 2', 'idx 3', 'idx 4', 'idx 5'], breakpointTPS);
+            
+            const mapHeaders = ['RPM/TPS', ...breakpointTPS.map(t => `${t}%`)];
+            tablesHtml += createTable('Fuel Map', mapHeaders, fuelMap, true, breakpointRPM);
+            tablesHtml += createTable('Ignition Map', mapHeaders, ignitionMap, true, breakpointRPM);
+            
+            tablesContainer.innerHTML = tablesHtml;
+            
+            rpmSlider.addEventListener('input', updateVisualization);
+            tpsSlider.addEventListener('input', updateVisualization);
+            
+            updateVisualization();
+        }
+
+        init();
+    });
+    </script>
+
+</body>
+</html>
