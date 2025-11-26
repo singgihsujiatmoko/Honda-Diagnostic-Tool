@@ -1,0 +1,799 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wake Up ECU Honda - Keihin & Shindengen</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
+        body {
+            font-family: 'Poppins', sans-serif;
+        }
+        .gradient-bg {
+            background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 50%, #06b6d4 100%);
+        }
+        .card-hover:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+        }
+        .pulse-dot {
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        .wire-animation {
+            animation: flow 2s linear infinite;
+        }
+        @keyframes flow {
+            0% { background-position: 0% 50%; }
+            100% { background-position: 100% 50%; }
+        }
+    </style>
+</head>
+<body class="bg-gray-900 text-white min-h-screen">
+    <!-- Header -->
+    <header class="gradient-bg py-6 shadow-lg">
+        <div class="container mx-auto px-4">
+            <div class="flex items-center justify-center gap-4">
+                <i class="fas fa-microchip text-4xl text-yellow-300"></i>
+                <div class="text-center">
+                    <h1 class="text-3xl md:text-4xl font-bold">Wake Up ECU Honda</h1>
+                    <p class="text-blue-200 text-sm md:text-base">Panduan Lengkap Keihin & Shindengen</p>
+                </div>
+                <i class="fas fa-car text-4xl text-yellow-300"></i>
+            </div>
+        </div>
+    </header>
+    <!-- Navigation Tabs -->
+    <nav class="bg-gray-800 sticky top-0 z-50 shadow-md">
+        <div class="container mx-auto px-4">
+            <div class="flex justify-center gap-2 md:gap-4 py-3 flex-wrap">
+                <button onclick="showSection('overview')" class="tab-btn active px-4 py-2 rounded-full bg-blue-600 hover:bg-blue-500 transition text-sm md:text-base">
+                    <i class="fas fa-info-circle mr-2"></i>Overview
+                </button>
+                <button onclick="showSection('keihin')" class="tab-btn px-4 py-2 rounded-full bg-gray-700 hover:bg-blue-500 transition text-sm md:text-base">
+                    <i class="fas fa-microchip mr-2"></i>Keihin
+                </button>
+                <button onclick="showSection('shindengen')" class="tab-btn px-4 py-2 rounded-full bg-gray-700 hover:bg-blue-500 transition text-sm md:text-base">
+                    <i class="fas fa-bolt mr-2"></i>Shindengen
+                </button>
+                <button onclick="showSection('tools')" class="tab-btn px-4 py-2 rounded-full bg-gray-700 hover:bg-blue-500 transition text-sm md:text-base">
+                    <i class="fas fa-tools mr-2"></i>Alat
+                </button>
+            </div>
+        </div>
+    </nav>
+    <!-- Main Content -->
+    <main class="container mx-auto px-4 py-8">
+        
+        <!-- Overview Section -->
+        <section id="overview" class="section-content">
+            <div class="text-center mb-10">
+                <h2 class="text-3xl font-bold mb-4 text-blue-400">Apa itu Wake Up ECU?</h2>
+                <p class="text-gray-300 max-w-3xl mx-auto text-lg">
+                    Wake Up ECU adalah proses mengaktifkan atau "membangunkan" ECU (Electronic Control Unit) dari mode sleep/standby 
+                    agar dapat berkomunikasi dengan alat diagnostic atau programmer untuk keperluan tuning, repair, atau cloning.
+                </p>
+            </div>
+            <!-- Info Cards -->
+            <div class="grid md:grid-cols-3 gap-6 mb-10">
+                <div class="bg-gray-800 rounded-xl p-6 card-hover transition duration-300 border border-gray-700">
+                    <div class="text-center">
+                        <div class="w-16 h-16 bg-blue-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <i class="fas fa-question text-3xl"></i>
+                        </div>
+                        <h3 class="text-xl font-semibold mb-3">Mengapa Diperlukan?</h3>
+                        <p class="text-gray-400">ECU Honda memiliki fitur sleep mode untuk hemat daya. Tanpa wake up, ECU tidak bisa diakses untuk programming.</p>
+                    </div>
+                </div>
+                <div class="bg-gray-800 rounded-xl p-6 card-hover transition duration-300 border border-gray-700">
+                    <div class="text-center">
+                        <div class="w-16 h-16 bg-green-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <i class="fas fa-clock text-3xl"></i>
+                        </div>
+                        <h3 class="text-xl font-semibold mb-3">Kapan Digunakan?</h3>
+                        <p class="text-gray-400">Saat melakukan read/write ECU, immo off, cloning ECU, repair checksum, atau tuning engine.</p>
+                    </div>
+                </div>
+                <div class="bg-gray-800 rounded-xl p-6 card-hover transition duration-300 border border-gray-700">
+                    <div class="text-center">
+                        <div class="w-16 h-16 bg-red-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <i class="fas fa-exclamation-triangle text-3xl"></i>
+                        </div>
+                        <h3 class="text-xl font-semibold mb-3">Perhatian!</h3>
+                        <p class="text-gray-400">Kesalahan dalam wake up atau wiring dapat merusak ECU. Pastikan menggunakan tegangan dan prosedur yang benar.</p>
+                    </div>
+                </div>
+            </div>
+            <!-- ECU Types Overview -->
+            <div class="bg-gradient-to-r from-gray-800 to-gray-700 rounded-xl p-6 md:p-8">
+                <h3 class="text-2xl font-bold mb-6 text-center text-yellow-400">
+                    <i class="fas fa-list-alt mr-2"></i>Jenis ECU Honda
+                </h3>
+                <div class="grid md:grid-cols-2 gap-6">
+                    <div class="bg-gray-900 rounded-lg p-5 border-l-4 border-blue-500">
+                        <h4 class="text-xl font-semibold text-blue-400 mb-3">
+                            <i class="fas fa-microchip mr-2"></i>Keihin ECU
+                        </h4>
+                        <ul class="text-gray-300 space-y-2">
+                            <li><i class="fas fa-check text-green-400 mr-2"></i>Digunakan pada Honda Mobil & Motor</li>
+                            <li><i class="fas fa-check text-green-400 mr-2"></i>Processor: Renesas SH7058/SH7059</li>
+                            <li><i class="fas fa-check text-green-400 mr-2"></i>Wake up via K-Line atau CAN</li>
+                            <li><i class="fas fa-check text-green-400 mr-2"></i>Contoh: Jazz, Brio, Vario, PCX</li>
+                        </ul>
+                    </div>
+                    <div class="bg-gray-900 rounded-lg p-5 border-l-4 border-purple-500">
+                        <h4 class="text-xl font-semibold text-purple-400 mb-3">
+                            <i class="fas fa-bolt mr-2"></i>Shindengen ECU
+                        </h4>
+                        <ul class="text-gray-300 space-y-2">
+                            <li><i class="fas fa-check text-green-400 mr-2"></i>Umumnya pada Honda Motor</li>
+                            <li><i class="fas fa-check text-green-400 mr-2"></i>Processor: Renesas RL78/F13</li>
+                            <li><i class="fas fa-check text-green-400 mr-2"></i>Wake up via K-Line khusus</li>
+                            <li><i class="fas fa-check text-green-400 mr-2"></i>Contoh: Beat FI, Scoopy FI, Revo</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </section>
+        <!-- Keihin Section -->
+        <section id="keihin" class="section-content hidden">
+            <div class="text-center mb-10">
+                <h2 class="text-3xl font-bold mb-4 text-blue-400">
+                    <i class="fas fa-microchip mr-2"></i>Wake Up ECU Keihin
+                </h2>
+                <p class="text-gray-300 max-w-3xl mx-auto">
+                    ECU Keihin Honda menggunakan protokol komunikasi K-Line (ISO 9141) atau CAN Bus tergantung model kendaraan.
+                </p>
+            </div>
+            <!-- Pinout Diagram -->
+            <div class="bg-gray-800 rounded-xl p-6 mb-8 border border-gray-700">
+                <h3 class="text-xl font-bold mb-4 text-yellow-400 text-center">
+                    <i class="fas fa-plug mr-2"></i>Pinout Wake Up Keihin (OBD2)
+                </h3>
+                <div class="grid md:grid-cols-2 gap-6">
+                    <div class="bg-gray-900 rounded-lg p-4">
+                        <h4 class="text-lg font-semibold text-blue-300 mb-3">Honda Mobil (OBD2 Port)</h4>
+                        <div class="space-y-2 text-sm">
+                            <div class="flex items-center gap-3 p-2 bg-gray-800 rounded">
+                                <span class="w-8 h-8 bg-red-600 rounded-full flex items-center justify-center font-bold">16</span>
+                                <span class="text-red-400 font-semibold">+12V Battery</span>
+                            </div>
+                            <div class="flex items-center gap-3 p-2 bg-gray-800 rounded">
+                                <span class="w-8 h-8 bg-black border-2 border-gray-500 rounded-full flex items-center justify-center font-bold">4</span>
+                                <span class="text-gray-300 font-semibold">Ground (Chassis)</span>
+                            </div>
+                            <div class="flex items-center gap-3 p-2 bg-gray-800 rounded">
+                                <span class="w-8 h-8 bg-black border-2 border-gray-500 rounded-full flex items-center justify-center font-bold">5</span>
+                                <span class="text-gray-300 font-semibold">Ground (Signal)</span>
+                            </div>
+                            <div class="flex items-center gap-3 p-2 bg-gray-800 rounded">
+                                <span class="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center font-bold">7</span>
+                                <span class="text-blue-400 font-semibold">K-Line (ISO 9141)</span>
+                            </div>
+                            <div class="flex items-center gap-3 p-2 bg-gray-800 rounded">
+                                <span class="w-8 h-8 bg-green-600 rounded-full flex items-center justify-center font-bold">6</span>
+                                <span class="text-green-400 font-semibold">CAN High</span>
+                            </div>
+                            <div class="flex items-center gap-3 p-2 bg-gray-800 rounded">
+                                <span class="w-8 h-8 bg-green-700 rounded-full flex items-center justify-center font-bold">14</span>
+                                <span class="text-green-300 font-semibold">CAN Low</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="bg-gray-900 rounded-lg p-4">
+                        <h4 class="text-lg font-semibold text-purple-300 mb-3">Honda Motor (DLC 4 Pin)</h4>
+                        <div class="space-y-2 text-sm">
+                            <div class="flex items-center gap-3 p-2 bg-gray-800 rounded">
+                                <span class="w-8 h-8 bg-red-600 rounded-full flex items-center justify-center font-bold">1</span>
+                                <span class="text-red-400 font-semibold">+12V (Dari Baterai/Kunci ON)</span>
+                            </div>
+                            <div class="flex items-center gap-3 p-2 bg-gray-800 rounded">
+                                <span class="w-8 h-8 bg-black border-2 border-gray-500 rounded-full flex items-center justify-center font-bold">2</span>
+                                <span class="text-gray-300 font-semibold">Ground</span>
+                            </div>
+                            <div class="flex items-center gap-3 p-2 bg-gray-800 rounded">
+                                <span class="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center font-bold">3</span>
+                                <span class="text-blue-400 font-semibold">K-Line (Data)</span>
+                            </div>
+                            <div class="flex items-center gap-3 p-2 bg-gray-800 rounded">
+                                <span class="w-8 h-8 bg-yellow-600 rounded-full flex items-center justify-center font-bold">4</span>
+                                <span class="text-yellow-400 font-semibold">Service Check (Optional)</span>
+                            </div>
+                        </div>
+                        <div class="mt-4 p-3 bg-yellow-900/30 rounded border border-yellow-600">
+                            <p class="text-yellow-300 text-sm">
+                                <i class="fas fa-info-circle mr-2"></i>
+                                Untuk PCX, Vario 150, ADV: Gunakan protocol ISO 14230 (KWP2000)
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- Wake Up Procedure -->
+            <div class="bg-gradient-to-r from-blue-900/50 to-purple-900/50 rounded-xl p-6 mb-8 border border-blue-700">
+                <h3 class="text-xl font-bold mb-4 text-cyan-400">
+                    <i class="fas fa-list-ol mr-2"></i>Prosedur Wake Up Keihin
+                </h3>
+                <div class="grid md:grid-cols-2 gap-6">
+                    <div>
+                        <h4 class="font-semibold text-blue-300 mb-3">Via K-Line (Bench Mode):</h4>
+                        <ol class="space-y-3 text-gray-300">
+                            <li class="flex gap-3">
+                                <span class="w-6 h-6 bg-blue-600 rounded-full flex items-center justify-center text-sm font-bold shrink-0">1</span>
+                                <span>Hubungkan +12V ke pin power ECU</span>
+                            </li>
+                            <li class="flex gap-3">
+                                <span class="w-6 h-6 bg-blue-600 rounded-full flex items-center justify-center text-sm font-bold shrink-0">2</span>
+                                <span>Hubungkan Ground ke pin GND ECU</span>
+                            </li>
+                            <li class="flex gap-3">
+                                <span class="w-6 h-6 bg-blue-600 rounded-full flex items-center justify-center text-sm font-bold shrink-0">3</span>
+                                <span>Hubungkan K-Line adapter ke pin K-Line</span>
+                            </li>
+                            <li class="flex gap-3">
+                                <span class="w-6 h-6 bg-blue-600 rounded-full flex items-center justify-center text-sm font-bold shrink-0">4</span>
+                                <span>Kirim init byte: <code class="bg-gray-800 px-2 py-1 rounded">0xFE</code> pada 10400 baud</span>
+                            </li>
+                            <li class="flex gap-3">
+                                <span class="w-6 h-6 bg-blue-600 rounded-full flex items-center justify-center text-sm font-bold shrink-0">5</span>
+                                <span>Tunggu response sync dari ECU</span>
+                            </li>
+                        </ol>
+                    </div>
+                    <div>
+                        <h4 class="font-semibold text-green-300 mb-3">Via CAN Bus:</h4>
+                        <ol class="space-y-3 text-gray-300">
+                            <li class="flex gap-3">
+                                <span class="w-6 h-6 bg-green-600 rounded-full flex items-center justify-center text-sm font-bold shrink-0">1</span>
+                                <span>Pastikan CAN termination 120Ω terpasang</span>
+                            </li>
+                            <li class="flex gap-3">
+                                <span class="w-6 h-6 bg-green-600 rounded-full flex items-center justify-center text-sm font-bold shrink-0">2</span>
+                                <span>Set baudrate: 500 kbps</span>
+                            </li>
+                            <li class="flex gap-3">
+                                <span class="w-6 h-6 bg-green-600 rounded-full flex items-center justify-center text-sm font-bold shrink-0">3</span>
+                                <span>Kirim wake up frame ke ID: <code class="bg-gray-800 px-2 py-1 rounded">0x7DF</code></span>
+                            </li>
+                            <li class="flex gap-3">
+                                <span class="w-6 h-6 bg-green-600 rounded-full flex items-center justify-center text-sm font-bold shrink-0">4</span>
+                                <span>Data: <code class="bg-gray-800 px-2 py-1 rounded">02 01 00</code> (Tester Present)</span>
+                            </li>
+                            <li class="flex gap-3">
+                                <span class="w-6 h-6 bg-green-600 rounded-full flex items-center justify-center text-sm font-bold shrink-0">5</span>
+                                <span>ECU response pada ID: <code class="bg-gray-800 px-2 py-1 rounded">0x7E8</code></span>
+                            </li>
+                        </ol>
+                    </div>
+                </div>
+            </div>
+            <!-- Supported Models -->
+            <div class="bg-gray-800 rounded-xl p-6 border border-gray-700">
+                <h3 class="text-xl font-bold mb-4 text-yellow-400">
+                    <i class="fas fa-car mr-2"></i>Model Honda dengan ECU Keihin
+                </h3>
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div class="bg-gray-900 rounded-lg p-3 text-center">
+                        <i class="fas fa-car text-blue-400 text-2xl mb-2"></i>
+                        <p class="font-semibold">Jazz GK/GE</p>
+                        <p class="text-xs text-gray-500">37820-xxx</p>
+                    </div>
+                    <div class="bg-gray-900 rounded-lg p-3 text-center">
+                        <i class="fas fa-car text-blue-400 text-2xl mb-2"></i>
+                        <p class="font-semibold">Brio</p>
+                        <p class="text-xs text-gray-500">37820-K25</p>
+                    </div>
+                    <div class="bg-gray-900 rounded-lg p-3 text-center">
+                        <i class="fas fa-car text-blue-400 text-2xl mb-2"></i>
+                        <p class="font-semibold">Mobilio</p>
+                        <p class="text-xs text-gray-500">37820-K44</p>
+                    </div>
+                    <div class="bg-gray-900 rounded-lg p-3 text-center">
+                        <i class="fas fa-car text-blue-400 text-2xl mb-2"></i>
+                        <p class="font-semibold">HR-V</p>
+                        <p class="text-xs text-gray-500">37820-xxx</p>
+                    </div>
+                    <div class="bg-gray-900 rounded-lg p-3 text-center">
+                        <i class="fas fa-motorcycle text-green-400 text-2xl mb-2"></i>
+                        <p class="font-semibold">PCX 150/160</p>
+                        <p class="text-xs text-gray-500">38770-xxx</p>
+                    </div>
+                    <div class="bg-gray-900 rounded-lg p-3 text-center">
+                        <i class="fas fa-motorcycle text-green-400 text-2xl mb-2"></i>
+                        <p class="font-semibold">Vario 150/160</p>
+                        <p class="text-xs text-gray-500">38770-K59</p>
+                    </div>
+                    <div class="bg-gray-900 rounded-lg p-3 text-center">
+                        <i class="fas fa-motorcycle text-green-400 text-2xl mb-2"></i>
+                        <p class="font-semibold">ADV 150/160</p>
+                        <p class="text-xs text-gray-500">38770-K2V</p>
+                    </div>
+                    <div class="bg-gray-900 rounded-lg p-3 text-center">
+                        <i class="fas fa-motorcycle text-green-400 text-2xl mb-2"></i>
+                        <p class="font-semibold">CBR 150/250</p>
+                        <p class="text-xs text-gray-500">38770-K45</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+        <!-- Shindengen Section -->
+        <section id="shindengen" class="section-content hidden">
+            <div class="text-center mb-10">
+                <h2 class="text-3xl font-bold mb-4 text-purple-400">
+                    <i class="fas fa-bolt mr-2"></i>Wake Up ECU Shindengen
+                </h2>
+                <p class="text-gray-300 max-w-3xl mx-auto">
+                    ECU Shindengen banyak digunakan pada motor Honda entry-level. Menggunakan K-Line dengan protokol khusus Honda.
+                </p>
+            </div>
+            <!-- Pinout Diagram -->
+            <div class="bg-gray-800 rounded-xl p-6 mb-8 border border-gray-700">
+                <h3 class="text-xl font-bold mb-4 text-yellow-400 text-center">
+                    <i class="fas fa-plug mr-2"></i>Pinout Wake Up Shindengen
+                </h3>
+                <div class="grid md:grid-cols-2 gap-6">
+                    <div class="bg-gray-900 rounded-lg p-4">
+                        <h4 class="text-lg font-semibold text-purple-300 mb-3">ECU Connector (26 Pin)</h4>
+                        <div class="space-y-2 text-sm">
+                            <div class="flex items-center gap-3 p-2 bg-gray-800 rounded">
+                                <span class="w-10 h-8 bg-red-600 rounded flex items-center justify-center font-bold text-xs">A1</span>
+                                <span class="text-red-400 font-semibold">+12V Main Power</span>
+                            </div>
+                            <div class="flex items-center gap-3 p-2 bg-gray-800 rounded">
+                                <span class="w-10 h-8 bg-orange-600 rounded flex items-center justify-center font-bold text-xs">A2</span>
+                                <span class="text-orange-400 font-semibold">+12V Ignition (Kunci ON)</span>
+                            </div>
+                            <div class="flex items-center gap-3 p-2 bg-gray-800 rounded">
+                                <span class="w-10 h-8 bg-black border-2 border-gray-500 rounded flex items-center justify-center font-bold text-xs">A3</span>
+                                <span class="text-gray-300 font-semibold">Ground Power</span>
+                            </div>
+                            <div class="flex items-center gap-3 p-2 bg-gray-800 rounded">
+                                <span class="w-10 h-8 bg-blue-600 rounded flex items-center justify-center font-bold text-xs">B4</span>
+                                <span class="text-blue-400 font-semibold">K-Line (DLC)</span>
+                            </div>
+                            <div class="flex items-center gap-3 p-2 bg-gray-800 rounded">
+                                <span class="w-10 h-8 bg-black border-2 border-gray-500 rounded flex items-center justify-center font-bold text-xs">B5</span>
+                                <span class="text-gray-300 font-semibold">Ground Signal</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="bg-gray-900 rounded-lg p-4">
+                        <h4 class="text-lg font-semibold text-green-300 mb-3">DLC Service Connector</h4>
+                        <div class="space-y-2 text-sm mb-4">
+                            <div class="flex items-center gap-3 p-2 bg-gray-800 rounded">
+                                <span class="w-10 h-8 bg-green-600 rounded flex items-center justify-center font-bold text-xs">1</span>
+                                <span class="text-green-400 font-semibold">K-Line Data</span>
+                            </div>
+                            <div class="flex items-center gap-3 p-2 bg-gray-800 rounded">
+                                <span class="w-10 h-8 bg-black border-2 border-gray-500 rounded flex items-center justify-center font-bold text-xs">2</span>
+                                <span class="text-gray-300 font-semibold">Ground</span>
+                            </div>
+                        </div>
+                        <div class="p-3 bg-purple-900/30 rounded border border-purple-600">
+                            <p class="text-purple-300 text-sm">
+                                <i class="fas fa-lightbulb mr-2"></i>
+                                Shindengen hanya memerlukan K-Line dan Ground untuk komunikasi. Tidak ada CAN Bus.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- Wake Up Procedure -->
+            <div class="bg-gradient-to-r from-purple-900/50 to-pink-900/50 rounded-xl p-6 mb-8 border border-purple-700">
+                <h3 class="text-xl font-bold mb-4 text-pink-400">
+                    <i class="fas fa-list-ol mr-2"></i>Prosedur Wake Up Shindengen
+                </h3>
+                <div class="grid md:grid-cols-2 gap-6">
+                    <div>
+                        <h4 class="font-semibold text-purple-300 mb-3">Metode Standard (On Vehicle):</h4>
+                        <ol class="space-y-3 text-gray-300">
+                            <li class="flex gap-3">
+                                <span class="w-6 h-6 bg-purple-600 rounded-full flex items-center justify-center text-sm font-bold shrink-0">1</span>
+                                <span>Putar kunci kontak ke posisi ON</span>
+                            </li>
+                            <li class="flex gap-3">
+                                <span class="w-6 h-6 bg-purple-600 rounded-full flex items-center justify-center text-sm font-bold shrink-0">2</span>
+                                <span>Hubungkan K-Line adapter ke DLC</span>
+                            </li>
+                            <li class="flex gap-3">
+                                <span class="w-6 h-6 bg-purple-600 rounded-full flex items-center justify-center text-sm font-bold shrink-0">3</span>
+                                <span>Baudrate: <code class="bg-gray-800 px-2 py-1 rounded">10400 bps</code></span>
+                            </li>
+                            <li class="flex gap-3">
+                                <span class="w-6 h-6 bg-purple-600 rounded-full flex items-center justify-center text-sm font-bold shrink-0">4</span>
+                                <span>Kirim init: <code class="bg-gray-800 px-2 py-1 rounded">0xFE 0x04 0xFF 0xFF</code></span>
+                            </li>
+                            <li class="flex gap-3">
+                                <span class="w-6 h-6 bg-purple-600 rounded-full flex items-center justify-center text-sm font-bold shrink-0">5</span>
+                                <span>Response valid: <code class="bg-gray-800 px-2 py-1 rounded">0x04 0xFE</code></span>
+                            </li>
+                        </ol>
+                    </div>
+                    <div>
+                        <h4 class="font-semibold text-pink-300 mb-3">Metode Bench (ECU Lepas):</h4>
+                        <ol class="space-y-3 text-gray-300">
+                            <li class="flex gap-3">
+                                <span class="w-6 h-6 bg-pink-600 rounded-full flex items-center justify-center text-sm font-bold shrink-0">1</span>
+                                <span>Siapkan power supply 12V/2A</span>
+                            </li>
+                            <li class="flex gap-3">
+                                <span class="w-6 h-6 bg-pink-600 rounded-full flex items-center justify-center text-sm font-bold shrink-0">2</span>
+                                <span>Hubungkan +12V ke pin A1 dan A2</span>
+                            </li>
+                            <li class="flex gap-3">
+                                <span class="w-6 h-6 bg-pink-600 rounded-full flex items-center justify-center text-sm font-bold shrink-0">3</span>
+                                <span>Hubungkan GND ke pin A3 dan B5</span>
+                            </li>
+                            <li class="flex gap-3">
+                                <span class="w-6 h-6 bg-pink-600 rounded-full flex items-center justify-center text-sm font-bold shrink-0">4</span>
+                                <span>K-Line adapter ke pin B4</span>
+                            </li>
+                            <li class="flex gap-3">
+                                <span class="w-6 h-6 bg-pink-600 rounded-full flex items-center justify-center text-sm font-bold shrink-0">5</span>
+                                <span>Jalankan software dengan timing 200ms</span>
+                            </li>
+                        </ol>
+                    </div>
+                </div>
+            </div>
+            <!-- Timing Diagram -->
+            <div class="bg-gray-800 rounded-xl p-6 mb-8 border border-gray-700">
+                <h3 class="text-xl font-bold mb-4 text-cyan-400">
+                    <i class="fas fa-wave-square mr-2"></i>Timing Diagram Shindengen
+                </h3>
+                <div class="bg-gray-900 rounded-lg p-4 font-mono text-sm overflow-x-auto">
+                    <pre class="text-green-400">
+┌─────────────────────────────────────────────────────────────────┐
+│                    WAKE UP SEQUENCE                              │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                  │
+│  K-Line  ────┐     ┌─────────────────────────────────────────   │
+│  (Idle)      │     │                                             │
+│              └─────┘  ← Init Pulse (25ms LOW)                   │
+│                                                                  │
+│  Delay: 50ms after power on                                      │
+│                                                                  │
+│  TX: [0xFE] [0x04] [0xFF] [0xFF]                                │
+│       │      │      │      │                                     │
+│       │      │      └──────┴── Address bytes                    │
+│       │      └── Length                                          │
+│       └── Sync byte                                              │
+│                                                                  │
+│  RX: [0x04] [0xFE] ← Valid response                             │
+│                                                                  │
+│  Timing: W1=25ms, W2=25ms, P2=50ms                              │
+│                                                                  │
+└─────────────────────────────────────────────────────────────────┘
+                    </pre>
+                </div>
+            </div>
+            <!-- Supported Models -->
+            <div class="bg-gray-800 rounded-xl p-6 border border-gray-700">
+                <h3 class="text-xl font-bold mb-4 text-yellow-400">
+                    <i class="fas fa-motorcycle mr-2"></i>Model Honda dengan ECU Shindengen
+                </h3>
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div class="bg-gray-900 rounded-lg p-3 text-center">
+                        <i class="fas fa-motorcycle text-purple-400 text-2xl mb-2"></i>
+                        <p class="font-semibold">Beat FI</p>
+                        <p class="text-xs text-gray-500">38770-K25</p>
+                    </div>
+                    <div class="bg-gray-900 rounded-lg p-3 text-center">
+                        <i class="fas fa-motorcycle text-purple-400 text-2xl mb-2"></i>
+                        <p class="font-semibold">Scoopy FI</p>
+                        <p class="text-xs text-gray-500">38770-K16</p>
+                    </div>
+                    <div class="bg-gray-900 rounded-lg p-3 text-center">
+                        <i class="fas fa-motorcycle text-purple-400 text-2xl mb-2"></i>
+                        <p class="font-semibold">Vario 110 FI</p>
+                        <p class="text-xs text-gray-500">38770-KZR</p>
+                    </div>
+                    <div class="bg-gray-900 rounded-lg p-3 text-center">
+                        <i class="fas fa-motorcycle text-purple-400 text-2xl mb-2"></i>
+                        <p class="font-semibold">Revo FI</p>
+                        <p class="text-xs text-gray-500">38770-K03</p>
+                    </div>
+                    <div class="bg-gray-900 rounded-lg p-3 text-center">
+                        <i class="fas fa-motorcycle text-purple-400 text-2xl mb-2"></i>
+                        <p class="font-semibold">Spacy FI</p>
+                        <p class="text-xs text-gray-500">38770-KYZ</p>
+                    </div>
+                    <div class="bg-gray-900 rounded-lg p-3 text-center">
+                        <i class="fas fa-motorcycle text-purple-400 text-2xl mb-2"></i>
+                        <p class="font-semibold">Blade FI</p>
+                        <p class="text-xs text-gray-500">38770-KWB</p>
+                    </div>
+                    <div class="bg-gray-900 rounded-lg p-3 text-center">
+                        <i class="fas fa-motorcycle text-purple-400 text-2xl mb-2"></i>
+                        <p class="font-semibold">Supra X 125 FI</p>
+                        <p class="text-xs text-gray-500">38770-KYZ</p>
+                    </div>
+                    <div class="bg-gray-900 rounded-lg p-3 text-center">
+                        <i class="fas fa-motorcycle text-purple-400 text-2xl mb-2"></i>
+                        <p class="font-semibold">BeAT Street</p>
+                        <p class="text-xs text-gray-500">38770-K81</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+        <!-- Tools Section -->
+        <section id="tools" class="section-content hidden">
+            <div class="text-center mb-10">
+                <h2 class="text-3xl font-bold mb-4 text-green-400">
+                    <i class="fas fa-tools mr-2"></i>Alat yang Diperlukan
+                </h2>
+                <p class="text-gray-300 max-w-3xl mx-auto">
+                    Berikut adalah peralatan yang dibutuhkan untuk melakukan wake up dan programming ECU Honda.
+                </p>
+            </div>
+            <!-- Hardware Tools -->
+            <div class="grid md:grid-cols-2 gap-6 mb-8">
+                <div class="bg-gray-800 rounded-xl p-6 border border-gray-700">
+                    <h3 class="text-xl font-bold mb-4 text-blue-400">
+                        <i class="fas fa-microchip mr-2"></i>Hardware
+                    </h3>
+                    <div class="space-y-4">
+                        <div class="flex gap-4 items-start p-3 bg-gray-900 rounded-lg">
+                            <div class="w-12 h-12 bg-blue-600 rounded-lg flex items-center justify-center shrink-0">
+                                <i class="fas fa-usb text-xl"></i>
+                            </div>
+                            <div>
+                                <h4 class="font-semibold text-blue-300">K-Line Adapter (ELM327/KKL)</h4>
+                                <p class="text-gray-400 text-sm">Interface K-Line to USB. Pilih yang support ISO 9141-2 dan ISO 14230</p>
+                            </div>
+                        </div>
+                        <div class="flex gap-4 items-start p-3 bg-gray-900 rounded-lg">
+                            <div class="w-12 h-12 bg-green-600 rounded-lg flex items-center justify-center shrink-0">
+                                <i class="fas fa-plug text-xl"></i>
+                            </div>
+                            <div>
+                                <h4 class="font-semibold text-green-300">OBD2 to DLC Cable</h4>
+                                <p class="text-gray-400 text-sm">Kabel konversi dari OBD2 standar ke Honda DLC 3/4 pin untuk motor</p>
+                            </div>
+                        </div>
+                        <div class="flex gap-4 items-start p-3 bg-gray-900 rounded-lg">
+                            <div class="w-12 h-12 bg-yellow-600 rounded-lg flex items-center justify-center shrink-0">
+                                <i class="fas fa-car-battery text-xl"></i>
+                            </div>
+                            <div>
+                                <h4 class="font-semibold text-yellow-300">Power Supply 12V</h4>
+                                <p class="text-gray-400 text-sm">PSU stabil 12V minimal 2A untuk bench mode. Gunakan yang ada proteksi</p>
+                            </div>
+                        </div>
+                        <div class="flex gap-4 items-start p-3 bg-gray-900 rounded-lg">
+                            <div class="w-12 h-12 bg-purple-600 rounded-lg flex items-center justify-center shrink-0">
+                                <i class="fas fa-network-wired text-xl"></i>
+                            </div>
+                            <div>
+                                <h4 class="font-semibold text-purple-300">Bench Adapter/Wiring Board</h4>
+                                <p class="text-gray-400 text-sm">PCB khusus untuk koneksi ECU di meja kerja dengan pin header</p>
+                            </div>
+                        </div>
+                        <div class="flex gap-4 items-start p-3 bg-gray-900 rounded-lg">
+                            <div class="w-12 h-12 bg-red-600 rounded-lg flex items-center justify-center shrink-0">
+                                <i class="fas fa-satellite-dish text-xl"></i>
+                            </div>
+                            <div>
+                                <h4 class="font-semibold text-red-300">CAN Bus Adapter (Optional)</h4>
+                                <p class="text-gray-400 text-sm">Untuk Honda terbaru yang menggunakan CAN protocol. Contoh: PCAN, Kvaser</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-gray-800 rounded-xl p-6 border border-gray-700">
+                    <h3 class="text-xl font-bold mb-4 text-purple-400">
+                        <i class="fas fa-laptop-code mr-2"></i>Software
+                    </h3>
+                    <div class="space-y-4">
+                        <div class="flex gap-4 items-start p-3 bg-gray-900 rounded-lg">
+                            <div class="w-12 h-12 bg-indigo-600 rounded-lg flex items-center justify-center shrink-0">
+                                <i class="fas fa-cog text-xl"></i>
+                            </div>
+                            <div>
+                                <h4 class="font-semibold text-indigo-300">HDS (Honda Diagnostic System)</h4>
+                                <p class="text-gray-400 text-sm">Software resmi Honda untuk diagnostic. Versi clone tersedia</p>
+                            </div>
+                        </div>
+                        <div class="flex gap-4 items-start p-3 bg-gray-900 rounded-lg">
+                            <div class="w-12 h-12 bg-cyan-600 rounded-lg flex items-center justify-center shrink-0">
+                                <i class="fas fa-wrench text-xl"></i>
+                            </div>
+                            <div>
+                                <h4 class="font-semibold text-cyan-300">HondaECU / ECU Flasher</h4>
+                                <p class="text-gray-400 text-sm">Open source tool untuk read/write ECU Honda. Support Keihin</p>
+                            </div>
+                        </div>
+                        <div class="flex gap-4 items-start p-3 bg-gray-900 rounded-lg">
+                            <div class="w-12 h-12 bg-teal-600 rounded-lg flex items-center justify-center shrink-0">
+                                <i class="fas fa-file-code text-xl"></i>
+                            </div>
+                            <div>
+                                <h4 class="font-semibold text-teal-300">WinOLS / ECM Titanium</h4>
+                                <p class="text-gray-400 text-sm">Software tuning untuk edit map dan parameter ECU</p>
+                            </div>
+                        </div>
+                        <div class="flex gap-4 items-start p-3 bg-gray-900 rounded-lg">
+                            <div class="w-12 h-12 bg-orange-600 rounded-lg flex items-center justify-center shrink-0">
+                                <i class="fas fa-terminal text-xl"></i>
+                            </div>
+                            <div>
+                                <h4 class="font-semibold text-orange-300">Terminal/Serial Monitor</h4>
+                                <p class="text-gray-400 text-sm">PuTTY, Realterm, atau HTerm untuk debug komunikasi K-Line</p>
+                            </div>
+                        </div>
+                        <div class="flex gap-4 items-start p-3 bg-gray-900 rounded-lg">
+                            <div class="w-12 h-12 bg-pink-600 rounded-lg flex items-center justify-center shrink-0">
+                                <i class="fas fa-calculator text-xl"></i>
+                            </div>
+                            <div>
+                                <h4 class="font-semibold text-pink-300">Checksum Calculator</h4>
+                                <p class="text-gray-400 text-sm">Tool untuk repair/recalculate checksum setelah edit ECU file</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- Wiring Tips -->
+            <div class="bg-gradient-to-r from-red-900/50 to-orange-900/50 rounded-xl p-6 mb-8 border border-red-700">
+                <h3 class="text-xl font-bold mb-4 text-red-400">
+                    <i class="fas fa-exclamation-triangle mr-2"></i>Tips Keamanan & Wiring
+                </h3>
+                <div class="grid md:grid-cols-2 gap-4">
+                    <ul class="space-y-2 text-gray-300">
+                        <li class="flex gap-2">
+                            <i class="fas fa-check-circle text-green-400 mt-1"></i>
+                            <span>Selalu backup file ECU original sebelum modifikasi</span>
+                        </li>
+                        <li class="flex gap-2">
+                            <i class="fas fa-check-circle text-green-400 mt-1"></i>
+                            <span>Gunakan power supply dengan proteksi short circuit</span>
+                        </li>
+                        <li class="flex gap-2">
+                            <i class="fas fa-check-circle text-green-400 mt-1"></i>
+                            <span>Periksa tegangan dengan multimeter sebelum koneksi</span>
+                        </li>
+                        <li class="flex gap-2">
+                            <i class="fas fa-check-circle text-green-400 mt-1"></i>
+                            <span>Jangan cabut kabel saat proses read/write berlangsung</span>
+                        </li>
+                    </ul>
+                    <ul class="space-y-2 text-gray-300">
+                        <li class="flex gap-2">
+                            <i class="fas fa-times-circle text-red-400 mt-1"></i>
+                            <span>Jangan gunakan tegangan lebih dari 14V</span>
+                        </li>
+                        <li class="flex gap-2">
+                            <i class="fas fa-times-circle text-red-400 mt-1"></i>
+                            <span>Jangan membalik polaritas (+/-)</span>
+                        </li>
+                        <li class="flex gap-2">
+                            <i class="fas fa-times-circle text-red-400 mt-1"></i>
+                            <span>Jangan write file dari ECU lain tanpa edit</span>
+                        </li>
+                        <li class="flex gap-2">
+                            <i class="fas fa-times-circle text-red-400 mt-1"></i>
+                            <span>Jangan interupsi proses flashing</span>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+            <!-- Quick Reference -->
+            <div class="bg-gray-800 rounded-xl p-6 border border-gray-700">
+                <h3 class="text-xl font-bold mb-4 text-yellow-400">
+                    <i class="fas fa-table mr-2"></i>Quick Reference - Baudrate & Protocol
+                </h3>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-sm">
+                        <thead>
+                            <tr class="bg-gray-900">
+                                <th class="p-3 text-left text-blue-400">ECU Type</th>
+                                <th class="p-3 text-left text-blue-400">Protocol</th>
+                                <th class="p-3 text-left text-blue-400">Baudrate</th>
+                                <th class="p-3 text-left text-blue-400">Init Byte</th>
+                                <th class="p-3 text-left text-blue-400">Address</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-700">
+                            <tr>
+                                <td class="p-3">Keihin (Old)</td>
+                                <td class="p-3">ISO 9141-2</td>
+                                <td class="p-3"><code class="bg-gray-700 px-1 rounded">10400</code></td>
+                                <td class="p-3"><code class="bg-gray-700 px-1 rounded">0xFE</code></td>
+                                <td class="p-3"><code class="bg-gray-700 px-1 rounded">0x72</code></td>
+                            </tr>
+                            <tr>
+                                <td class="p-3">Keihin (New)</td>
+                                <td class="p-3">ISO 14230 (KWP)</td>
+                                <td class="p-3"><code class="bg-gray-700 px-1 rounded">10400</code></td>
+                                <td class="p-3"><code class="bg-gray-700 px-1 rounded">0xFE</code></td>
+                                <td class="p-3"><code class="bg-gray-700 px-1 rounded">0x72/0x82</code></td>
+                            </tr>
+                            <tr>
+                                <td class="p-3">Keihin CAN</td>
+                                <td class="p-3">ISO 15765 (CAN)</td>
+                                <td class="p-3"><code class="bg-gray-700 px-1 rounded">500k</code></td>
+                                <td class="p-3"><code class="bg-gray-700 px-1 rounded">-</code></td>
+                                <td class="p-3"><code class="bg-gray-700 px-1 rounded">0x7DF</code></td>
+                            </tr>
+                            <tr>
+                                <td class="p-3">Shindengen</td>
+                                <td class="p-3">Honda K-Line</td>
+                                <td class="p-3"><code class="bg-gray-700 px-1 rounded">10400</code></td>
+                                <td class="p-3"><code class="bg-gray-700 px-1 rounded">0xFE</code></td>
+                                <td class="p-3"><code class="bg-gray-700 px-1 rounded">0x04</code></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+    </main>
+    <!-- Footer -->
+    <footer class="bg-gray-800 py-6 mt-10 border-t border-gray-700">
+        <div class="container mx-auto px-4 text-center">
+            <p class="text-gray-400 mb-2">
+                <i class="fas fa-info-circle mr-2"></i>
+                Informasi ini untuk tujuan edukasi. Gunakan dengan bijak dan tanggung jawab.
+            </p>
+            <p class="text-gray-500 text-sm">
+                &copy; 2024 Wake Up ECU Honda Info | Keihin & Shindengen Reference
+            </p>
+        </div>
+    </footer>
+    <script>
+        // Tab Navigation
+        function showSection(sectionId) {
+            // Hide all sections
+            document.querySelectorAll('.section-content').forEach(section => {
+                section.classList.add('hidden');
+            });
+            
+            // Show selected section
+            document.getElementById(sectionId).classList.remove('hidden');
+            
+            // Update tab buttons
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.remove('bg-blue-600');
+                btn.classList.add('bg-gray-700');
+            });
+            
+            // Highlight active tab
+            event.target.classList.remove('bg-gray-700');
+            event.target.classList.add('bg-blue-600');
+        }
+        // Smooth scroll behavior
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                document.querySelector(this.getAttribute('href')).scrollIntoView({
+                    behavior: 'smooth'
+                });
+            });
+        });
+        // Add animation on scroll
+        const observerOptions = {
+            threshold: 0.1,
+            rootMargin: '0px 0px -50px 0px'
+        };
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.style.opacity = '1';
+                    entry.target.style.transform = 'translateY(0)';
+                }
+            });
+        }, observerOptions);
+        document.querySelectorAll('.card-hover').forEach(card => {
+            card.style.opacity = '0';
+            card.style.transform = 'translateY(20px)';
+            card.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
+            observer.observe(card);
+        });
+    </script>
+</body>
+</html>
