@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="utf-8" />
+  <title>Honda Scan Tool C# - K-Line 10400 (COM4)</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+  <style>
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+  </style>
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen">
+  <div class="max-w-5xl mx-auto px-4 py-8">
+    <header class="mb-8">
+      <h1 class="text-3xl font-bold mb-2">Honda Scan Tool C#</h1>
+      <p class="text-slate-300">Contoh aplikasi console untuk diagnosa &amp; live data ECU motor Honda via K-Line (10400 bps, COM4).</p>
+    </header>
+
+    <section class="mb-8 bg-slate-800/60 border border-slate-700 rounded-xl p-6">
+      <h2 class="text-xl font-semibold mb-3">Fitur</h2>
+      <ul class="list-disc list-inside text-slate-200 space-y-1 text-sm">
+        <li>Port serial tetap: <span class="font-mono">COM4</span>, baudrate <span class="font-mono">10400</span>.</li>
+        <li>Proses <strong>Wake Up</strong> K-Line &amp; inisialisasi sesi diagnosa.</li>
+        <li>Request &amp; parsing <strong>ECM ID</strong>.</li>
+        <li>Request &amp; parsing <strong>live data</strong> beberapa parameter sensor (RPM, TPS, suhu, MAP, tegangan, O2, dll).</li>
+      </ul>
+      <p class="mt-3 text-xs text-amber-300">Catatan: Frame dan skala data menggunakan contoh umum K-Line / KWP2000 Honda. Untuk unit produksi, sesuaikan ID, panjang frame, dan rumus skala dengan dokumentasi ECU motor yang digunakan.</p>
+    </section>
+
+    <section class="mb-8">
+      <h2 class="text-xl font-semibold mb-3">Cara Pakai Singkat</h2>
+      <ol class="list-decimal list-inside text-sm space-y-1 text-slate-200">
+        <li>Gunakan interface K-Line (misalnya USB-&gt;K-Line) yang muncul sebagai port serial di Windows.</li>
+        <li>Pastikan interface terdeteksi sebagai <strong>COM4</strong> atau ubah nama port di kode jika berbeda.</li>
+        <li>Buat project <span class="font-mono">.NET Console</span> baru, ganti isi <span class="font-mono">Program.cs</span> dengan kode di bawah.</li>
+        <li>Build &amp; jalankan aplikasi. Aplikasi akan:
+          <ul class="list-disc list-inside ml-6">
+            <li>Membuka COM4 @ 10400 bps</li>
+            <li>Melakukan Wake Up &amp; inisialisasi</li>
+            <li>Menampilkan ECM ID</li>
+            <li>Menampilkan live data sensor di console (refresh berkala)</li>
+          </ul>
+        </li>
+      </ol>
+    </section>
+
+    <section class="mb-8">
+      <div class="flex items-center justify-between mb-3">
+        <h2 class="text-xl font-semibold">Kode Lengkap C#</h2>
+        <button id="copy-btn" class="text-xs px-3 py-1 rounded-md border border-slate-500 text-slate-100 hover:bg-slate-700 active:bg-slate-600">Copy kode</button>
+      </div>
+      <textarea id="code-block" class="w-full h-[34rem] bg-slate-950 text-slate-100 text-xs font-mono rounded-xl border border-slate-700 p-4 leading-relaxed resize-y" spellcheck="false" readonly wrap="off">
+using System;
+using System.Collections.Generic;
+using System.IO.Ports;
+using System.Text;
+using System.Threading;
+
+namespace HondaScanTool
+{
+    /// &lt;summary&gt;
+    /// Contoh sederhana Honda Scan Tool via K-Line (10400 bps, COM4).
+    /// - WakeUp(): bangunkan ECU (pseudo fast-init).
+    /// - InitializeSession(): mulai sesi diagnosa.
+    /// - RequestEcmId(): request &amp; parse ECM ID.
+    /// - LiveDataLoop(): request &amp; tampilkan live data sensor.
+    ///
+    /// CATATAN PENTING:
+    /// * Format frame, alamat, service ID, dan scaling sensor di sini adalah CONTOH.
+    /// * Untuk implementasi real, sesuaikan dengan dokumen / reverse-engineering ECU Honda yang dipakai.
+    /// * K-Line secara fisik biasanya lewat interface khusus (USB-KLine / FTDI / dsb), bukan langsung dari port RS232 PC.
+    /// &lt;/summary&gt;
+    public class HondaKLineScanTool : IDisposable
+    {
+        private readonly SerialPort _port;
+
+        // Contoh alamat, bisa berbeda antar ECU Honda
+        private const byte ECU_ADDR = 0x12;   // alamat ECU (contoh)
+        private const byte TESTER_ADDR = 0xF1; // alamat tester (tool)
+        private const byte TARGET = 0x80;      // header target / format
+
+        private const int ReadTimeoutMs = 500;
+        private const int WriteTimeoutMs = 500;
+
+        public HondaKLineScanTool(string portName = "COM4")
+        {
+            _port = new SerialPort(portName, 10400, Parity.None, 8, StopBits.One)
+            {
+                ReadTimeout = ReadTimeoutMs,
+                WriteTimeout = WriteTimeoutMs
+            };
+        }
+
+        public void Open()
+        {
+            if (!_port.IsOpen)
+            {
+                _port.Open();
+            }
+        }
+
+        public void Dispose()
+        {
+            if (_port != null &amp;&amp; _port.IsOpen)
+            {
+                _port.Close();
+            }
+        }
+
+        /// &lt;summary&gt;
+        /// Wake Up / Fast Init K-Line (SANGAT tergantung interface).
+        /// Di sini hanya pseudo toggle DTR sebagai contoh.
+        /// &lt;/summary&gt;
+        public void WakeUp()
+        {
+            Console.WriteLine("== Wake Up K-Line ==");
+
+            _port.DiscardInBuffer();
+            _port.DiscardOutBuffer();
+
+            // Contoh "fast init" pseudo dengan DTR sebagai K-Line (tergantung interface)
+            _port.DtrEnable = false;
+            Thread.Sleep(300);
+            _port.DtrEnable = true;
+            Thread.Sleep(25);
+            _port.DtrEnable = false;
+            Thread.Sleep(25);
+            _port.DtrEnable = true; // idle high
+            Thread.Sleep(25);
+        }
+
+        /// &lt;summary&gt;
+        /// Inisialisasi sesi diagnosa (contoh frame KWP2000).
+        /// &lt;/summary&gt;
+        public byte[] InitializeSession()
+        {
+            // Frame init sangat tergantung ECU / interface.
+            // Contoh: [target][ecu][tester][len][serviceStartCommunication][sub]
+            byte[] initFrame = new byte[]
+            {
+                TARGET, ECU_ADDR, TESTER_ADDR, 0x02, 0x81, 0x01
+            };
+
+            Console.WriteLine("== Inisialisasi sesi ==");
+            SendFrame(initFrame);
+            return ReadFrame("INIT");
+        }
+
+        /// &lt;summary&gt;
+        /// Request ECM ID dan parsing sederhana string ID.
+        /// &lt;/summary&gt;
+        public string RequestEcmId()
+        {
+            // Contoh request: service 0x1A, ID 0x90 (ECU identification)
+            byte[] frame = new byte[]
+            {
+                TARGET, ECU_ADDR, TESTER_ADDR, 0x02, 0x1A, 0x90
+            };
+
+            Console.WriteLine("== Request ECM ID ==");
+            SendFrame(frame);
+            var resp = ReadFrame("ECM ID");
+
+            if (resp == null || resp.Length &lt; 7)
+                return "Tidak ada respon / format tidak dikenali";
+
+            // Struktur contoh:
+            // 0:target,1:ecu,2:tester,3:length,4:service(0x5A),5:id(0x90),6..:data+checksum
+            int payloadStart = 4;
+            int serviceIndex = payloadStart;
+            int idIndex = serviceIndex + 2;
+
+            if (resp[serviceIndex] != 0x5A) // positive response dari 0x1A biasanya 0x5A
+                return "Respon negatif / tidak valid";
+
+            int textLen = resp.Length - idIndex;
+            if (textLen &lt;= 0)
+                return "ECM ID kosong";
+
+            try
+            {
+                return Encoding.ASCII.GetString(resp, idIndex, textLen);
+            }
+            catch
+            {
+                // Jika bukan ASCII, tampilkan hex
+                return BitConverter.ToString(resp, idIndex);
+            }
+        }
+
+        /// &lt;summary&gt;
+        /// Request satu blok live data (contoh service 0x21, block 0x01).
+        /// &lt;/summary&gt;
+        public byte[] RequestLiveDataBlock()
+        {
+            byte[] frame = new byte[]
+            {
+                TARGET, ECU_ADDR, TESTER_ADDR, 0x02, 0x21, 0x01
+            };
+
+            SendFrame(frame);
+            return ReadFrame("LIVE");
+        }
+
+        /// &lt;summary&gt;
+        /// Parsing payload live data menjadi parameter sensor (contoh mapping).
+        /// &lt;/summary&gt;
+        public IDictionary&lt;string, string&gt; ParseLiveData(byte[] frame)
+        {
+            var result = new Dictionary&lt;string, string&gt;();
+
+            if (frame == null || frame.Length &lt; 12)
+                return result;
+
+            // Contoh struktur:
+            // 0:target,1:ecu,2:tester,3:length,4:service(0x61),5:blockId,6..payload, last:checksum
+            int payloadStart = 6;
+            if (frame.Length &lt; payloadStart + 8)
+                return result;
+
+            byte A, B;
+
+            // Engine RPM: 2 byte (A,B)
+            A = frame[payloadStart + 0];
+            B = frame[payloadStart + 1];
+            double rpm = ((A * 256) + B) / 4.0; // contoh scaling
+            result["Engine RPM"] = $"{rpm:F0} rpm";
+
+            // Throttle Position
+            A = frame[payloadStart + 2];
+            double tps = A * 100.0 / 255.0;
+            result["Throttle Position"] = $"{tps:F1} %";
+
+            // Coolant Temperature
+            A = frame[payloadStart + 3];
+            double ect = A - 40.0;
+            result["Coolant Temp"] = $"{ect:F1} °C";
+
+            // Intake Air Temperature
+            A = frame[payloadStart + 4];
+            double iat = A - 40.0;
+            result["Intake Air Temp"] = $"{iat:F1} °C";
+
+            // Manifold Absolute Pressure (MAP)
+            A = frame[payloadStart + 5];
+            double map = A * 0.34; // contoh scaling ke kPa
+            result["MAP"] = $"{map:F1} kPa";
+
+            // Battery Voltage
+            A = frame[payloadStart + 6];
+            double batt = A * 0.1;
+            result["Battery Voltage"] = $"{batt:F1} V";
+
+            // O2 Sensor
+            A = frame[payloadStart + 7];
+            double o2 = A * 0.005;
+            result["O2 Sensor"] = $"{o2:F3} V";
+
+            // Contoh parameter tambahan jika data cukup panjang
+            if (frame.Length &gt;= payloadStart + 10)
+            {
+                A = frame[payloadStart + 8];
+                double inj = A * 0.128; // contoh: ms
+                result["Injector Pulse"] = $"{inj:F2} ms";
+
+                A = frame[payloadStart + 9];
+                double ign = A - 64.0; // contoh: derajat advance
+                result["Ignition Advance"] = $"{ign:F1} ° BTDC";
+            }
+
+            return result;
+        }
+
+        /// &lt;summary&gt;
+        /// Loop permintaan live data dan tampilkan ke console.
+        /// &lt;/summary&gt;
+        public void LiveDataLoop()
+        {
+            Console.WriteLine("== Live Data (Ctrl+C untuk berhenti) ==");
+
+            while (true)
+            {
+                var frame = RequestLiveDataBlock();
+                var sensors = ParseLiveData(frame);
+
+                Console.Clear();
+                Console.WriteLine("Honda Scan Tool - Live Data (K-Line 10400 / COM4)");
+                Console.WriteLine(new string('-', 60));
+
+                if (sensors.Count == 0)
+                {
+                    Console.WriteLine("Tidak ada data / frame tidak valid.");
+                }
+                else
+                {
+                    foreach (var kv in sensors)
+                    {
+                        Console.WriteLine($"{kv.Key,-24} : {kv.Value}");
+                    }
+                }
+
+                Thread.Sleep(200); // delay antar request
+            }
+        }
+
+        /// &lt;summary&gt;
+        /// Kirim frame dengan checksum sederhana (jumlah semua byte modulo 0x100).
+        /// &lt;/summary&gt;
+        private void SendFrame(byte[] frame)
+        {
+            byte checksum = 0x00;
+            for (int i = 0; i &lt; frame.Length; i++)
+                checksum += frame[i];
+
+            var full = new byte[frame.Length + 1];
+            Buffer.BlockCopy(frame, 0, full, 0, frame.Length);
+            full[full.Length - 1] = checksum;
+
+            Console.WriteLine("TX: " + BitConverter.ToString(full));
+            _port.Write(full, 0, full.Length);
+        }
+
+        /// &lt;summary&gt;
+        /// Baca satu frame sampai timeout atau idle (BytesToRead == 0 selama beberapa saat).
+        /// &lt;/summary&gt;
+        private byte[] ReadFrame(string tag)
+        {
+            var buffer = new List&lt;byte&gt;();
+            var sw = System.Diagnostics.Stopwatch.StartNew();
+
+            while (sw.ElapsedMilliseconds &lt; ReadTimeoutMs)
+            {
+                try
+                {
+                    int b = _port.ReadByte();
+                    buffer.Add((byte)b);
+
+                    // Jika buffer input kosong sebentar, anggap frame selesai
+                    if (_port.BytesToRead == 0)
+                    {
+                        Thread.Sleep(10);
+                        if (_port.BytesToRead == 0)
+                            break;
+                    }
+                }
+                catch (TimeoutException)
+                {
+                    break;
+                }
+            }
+
+            var data = buffer.ToArray();
+            Console.WriteLine($"{tag} RX: " + (data.Length &gt; 0 ? BitConverter.ToString(data) : "&lt;no data&gt;"));
+
+            return data.Length == 0 ? null : data;
+        }
+    }
+
+    internal static class Program
+    {
+        private static void Main()
+        {
+            Console.OutputEncoding = Encoding.UTF8;
+            Console.WriteLine("Honda Scan Tool - K-Line 10400 (COM4)");
+            Console.WriteLine("=======================================");
+
+            try
+            {
+                using (var tool = new HondaKLineScanTool("COM4"))
+                {
+                    tool.Open();
+
+                    // 1. Wake Up K-Line
+                    tool.WakeUp();
+
+                    // 2. Inisialisasi sesi diagnosa
+                    var initResp = tool.InitializeSession();
+                    Console.WriteLine("Init selesai, panjang respon: " + (initResp?.Length ?? 0));
+
+                    // 3. Request ECM ID
+                    string ecmId = tool.RequestEcmId();
+                    Console.WriteLine("ECM ID : " + ecmId);
+                    Console.WriteLine();
+                    Console.WriteLine("Tekan ENTER untuk mulai live data...");
+                    Console.ReadLine();
+
+                    // 4. Loop live data (tampilkan semua parameter sensor yang diparse)
+                    tool.LiveDataLoop();
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("ERROR: " + ex.Message);
+                Console.WriteLine(ex);
+            }
+
+            Console.WriteLine("Selesai. Tekan ENTER untuk keluar.");
+            Console.ReadLine();
+        }
+    }
+}
+      </textarea>
+    </section>
+
+    <section class="mb-8 bg-slate-800/60 border border-slate-700 rounded-xl p-6">
+      <h2 class="text-lg font-semibold mb-2">Struktur Frame &amp; Sensor (Contoh)</h2>
+      <p class="text-sm text-slate-200 mb-3">Kode diasumsikan menerima frame live data dengan urutan payload berikut (contoh):</p>
+      <div class="overflow-x-auto">
+        <table class="min-w-full text-xs text-left">
+          <thead class="bg-slate-800">
+            <tr>
+              <th class="px-3 py-2 border-b border-slate-700">Index</th>
+              <th class="px-3 py-2 border-b border-slate-700">Parameter</th>
+              <th class="px-3 py-2 border-b border-slate-700">Rumus</th>
+              <th class="px-3 py-2 border-b border-slate-700">Satuan</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="border-b border-slate-800">
+              <td class="px-3 py-2 font-mono">0-1</td>
+              <td class="px-3 py-2">Engine RPM</td>
+              <td class="px-3 py-2 font-mono">((A * 256) + B) / 4</td>
+              <td class="px-3 py-2 font-mono">rpm</td>
+            </tr>
+            <tr class="border-b border-slate-800">
+              <td class="px-3 py-2 font-mono">2</td>
+              <td class="px-3 py-2">Throttle Position</td>
+              <td class="px-3 py-2 font-mono">A * 100 / 255</td>
+              <td class="px-3 py-2 font-mono">%</td>
+            </tr>
+            <tr class="border-b border-slate-800">
+              <td class="px-3 py-2 font-mono">3</td>
+              <td class="px-3 py-2">Coolant Temp</td>
+              <td class="px-3 py-2 font-mono">A - 40</td>
+              <td class="px-3 py-2 font-mono">°C</td>
+            </tr>
+            <tr class="border-b border-slate-800">
+              <td class="px-3 py-2 font-mono">4</td>
+              <td class="px-3 py-2">Intake Air Temp</td>
+              <td class="px-3 py-2 font-mono">A - 40</td>
+              <td class="px-3 py-2 font-mono">°C</td>
+            </tr>
+            <tr class="border-b border-slate-800">
+              <td class="px-3 py-2 font-mono">5</td>
+              <td class="px-3 py-2">MAP</td>
+              <td class="px-3 py-2 font-mono">A * 0.34</td>
+              <td class="px-3 py-2 font-mono">kPa</td>
+            </tr>
+            <tr class="border-b border-slate-800">
+              <td class="px-3 py-2 font-mono">6</td>
+              <td class="px-3 py-2">Battery Voltage</td>
+              <td class="px-3 py-2 font-mono">A * 0.1</td>
+              <td class="px-3 py-2 font-mono">V</td>
+            </tr>
+            <tr class="border-b border-slate-800">
+              <td class="px-3 py-2 font-mono">7</td>
+              <td class="px-3 py-2">O2 Sensor</td>
+              <td class="px-3 py-2 font-mono">A * 0.005</td>
+              <td class="px-3 py-2 font-mono">V</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="mt-3 text-xs text-slate-300">Untuk menambah parameter sensor lain, tinggal perlu menyesuaikan pemetaan byte payload dan rumus di method <span class="font-mono">ParseLiveData</span>.</p>
+    </section>
+
+    <footer class="text-xs text-slate-500 border-t border-slate-800 pt-4 mt-8">
+      Contoh edukasi. Gunakan dengan tetap memperhatikan keselamatan &amp; regulasi pabrikan.
+    </footer>
+  </div>
+
+  <script>
+    (function () {
+      const btn = document.getElementById('copy-btn');
+      const code = document.getElementById('code-block');
+      if (!btn || !code) return;
+
+      btn.addEventListener('click', async () => {
+        try {
+          const text = code.value;
+          await navigator.clipboard.writeText(text);
+          const old = btn.innerText;
+          btn.innerText = 'Tersalin';
+          btn.classList.add('bg-emerald-600', 'border-emerald-500');
+          setTimeout(() => {
+            btn.innerText = old;
+            btn.classList.remove('bg-emerald-600', 'border-emerald-500');
+          }, 1500);
+        } catch (e) {
+          alert('Gagal copy kode: ' + e);
+        }
+      });
+    })();
+  </script>
+</body>
+</html>
